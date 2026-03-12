@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FRMULA+ Admin Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f6f6f8;--surface:#ffffff;--card:#ffffff;--muted:#f1f1f4;--border:#ececf2;--red:#e10600;--black:#0f0f12;--text:#121212;--text2:#6d6d78;--text3:#9a9aa5;--sidebar-w:252px;--shadow:0 18px 45px rgba(0,0,0,.06)}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex}
+a{color:var(--red);text-decoration:none}
+.sidebar{width:var(--sidebar-w);background:linear-gradient(180deg,#fff 0%,#fbfbfd 100%);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;height:100vh;z-index:10}
+.sidebar-logo{padding:28px 24px;border-bottom:1px solid var(--border);font-size:26px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:10px;color:var(--black)}
+.sidebar-logo span{color:var(--red)}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:12px;padding:14px 18px;margin:6px 14px;color:var(--text2);cursor:pointer;transition:all .2s;font-size:14px;font-weight:600;border-radius:18px;border:1px solid transparent}
+.nav-item:hover,.nav-item.active{background:#fff1f1;color:var(--black);border-color:#ffd7d5;box-shadow:0 8px 18px rgba(225,6,0,.08)}
+.nav-item svg{width:18px;height:18px;flex-shrink:0}
+.sidebar-footer{padding:18px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text3)}
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:24px 32px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.82);backdrop-filter:blur(14px)}
+.topbar h1{font-size:32px;font-weight:800;letter-spacing:-.5px}
+.topbar-actions{display:flex;gap:12px;align-items:center}
+.btn{padding:10px 16px;border-radius:14px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;font-size:12px;font-weight:700;transition:all .2s;box-shadow:none}
+.btn:hover{border-color:var(--red);color:var(--red);transform:translateY(-1px)}
+.btn-primary{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 14px 28px rgba(225,6,0,.22)}
+.btn-primary:hover{background:#c00500}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-danger{border-color:#f44;color:#f44}
+.btn-danger:hover{background:#f4410e;color:#fff}
+.content{padding:28px 32px 40px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-bottom:28px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:28px;padding:24px;box-shadow:var(--shadow)}
+.stat-card .label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1.8px;margin-bottom:10px}
+.stat-card .value{font-size:40px;font-weight:800;letter-spacing:-1px}
+.stat-card .sub{font-size:11px;color:var(--text2);margin-top:4px}
+.section{background:var(--card);border:1px solid var(--border);border-radius:30px;margin-bottom:24px;box-shadow:var(--shadow)}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:22px 24px;border-bottom:1px solid var(--border)}
+.section-title{font-size:18px;font-weight:800;letter-spacing:-.3px}
+.table{width:100%;border-collapse:collapse}
+.table th{text-align:left;padding:14px 24px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)}
+.table td{padding:16px 24px;border-bottom:1px solid var(--border);font-size:13px}
+.table tr:last-child td{border-bottom:none}
+.table tr:hover td{background:#fff6f6}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.badge-green{background:#22c55e22;color:#22c55e}
+.badge-red{background:#ef444422;color:#ef4444}
+.badge-yellow{background:#eab30822;color:#eab308}
+.badge-blue{background:#3b82f622;color:#3b82f6}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:100}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:28px;width:90%;max-width:680px;max-height:85vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.12)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px;border-bottom:1px solid var(--border)}
+.modal-header h2{font-size:16px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:4px}
+.modal-body{padding:20px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:600}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:13px 14px;background:var(--muted);border:1px solid var(--border);border-radius:16px;color:var(--text);font-size:13px;font-family:inherit}
+.form-group textarea{min-height:80px;resize:vertical}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:var(--red)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;padding:16px 20px;border-top:1px solid var(--border)}
+.toggle{position:relative;width:40px;height:22px;display:inline-block}
+.toggle input{display:none}
+.toggle .slider{position:absolute;inset:0;background:var(--border);border-radius:11px;cursor:pointer;transition:.3s}
+.toggle input:checked+.slider{background:var(--red)}
+.toggle .slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.slider:before{transform:translateX(18px)}
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;background:#22c55e;color:#fff;border-radius:8px;font-size:13px;font-weight:600;display:none;z-index:200;animation:slideIn .3s ease}
+@keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.empty{text-align:center;padding:40px;color:var(--text3);font-size:13px}
+@media(max-width:768px){
+  .sidebar{width:72px}.sidebar-logo span,.nav-item span{display:none}.sidebar-logo{padding:20px 15px;justify-content:center;font-size:18px}.nav-item{padding:14px 0;justify-content:center;margin:6px 8px}
+  .main{margin-left:72px}.content{padding:16px}.stats-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-logo">Frmula<span>+</span></div>
+  <nav class="sidebar-nav">
+    <div class="nav-item active" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></div>
+    <div class="nav-item" data-page="news"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 8h16M8 4v16"/></svg><span>Feed</span></div>
+    <div class="nav-item" data-page="learn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Learn F1</span></div>
+    <div class="nav-item" data-page="announcements"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Announcements</span></div>
+    <div class="nav-item" data-page="config"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span>App Config</span></div>
+  </nav>
+  <div class="sidebar-footer">
+    <span>Admin Panel v1.0</span>
+    <div style="margin-top:8px"><button class="btn btn-sm btn-danger" onclick="logout()">Logout</button></div>
+  </div>
+</div>
+<div class="main">
+  <div class="topbar">
+    <h1 id="pageTitle">Dashboard</h1>
+    <div class="topbar-actions">
+      <span style="font-size:12px;color:var(--text3)" id="adminUser">admin</span>
+    </div>
+  </div>
+  <div class="content" id="pageContent"></div>
+</div>
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-header"><h2 id="modalTitle">Modal</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const API = '/admin/api';
+let currentPage = 'dashboard';
+let token = localStorage.getItem('admin_token') || '';
+
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...(opts.headers || {}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  if (res.status === 401) { logout(); return null; }
+  return res.json();
+}
+
+function showToast(msg, color) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = color || '#22c55e';
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+function openModal(title, bodyHtml, footerHtml) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = bodyHtml;
+  document.getElementById('modalFooter').innerHTML = footerHtml || '';
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
+  document.getElementById('pageTitle').textContent = { dashboard: 'Dashboard', news: 'Feed Management', learn: 'Learn F1 Content', announcements: 'Push Notifications', config: 'App Configuration' }[page];
+  loadPage(page);
+}
+
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => navigate(n.dataset.page)));
+
+async function loadPage(page) {
+  const c = document.getElementById('pageContent');
+  c.innerHTML = '<div class="empty">Loading...</div>';
+  if (page === 'dashboard') await loadDashboard(c);
+  else if (page === 'news') await loadNews(c);
+  else if (page === 'learn') await loadLearn(c);
+  else if (page === 'announcements') await loadAnnouncements(c);
+  else if (page === 'config') await loadConfig(c);
+}
+
+async function loadDashboard(c) {
+  const [news, learn, announcements, config] = await Promise.all([
+    api('/news'), api('/learn'), api('/announcements'), api('/config')
+  ]);
+  c.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">Feed Posts</div><div class="value">${news?.length || 0}</div><div class="sub">Timeline content</div></div>
+      <div class="stat-card"><div class="label">Learn F1 Topics</div><div class="value">${learn?.length || 0}</div><div class="sub">Educational content</div></div>
+      <div class="stat-card"><div class="label">Announcements</div><div class="value">${announcements?.filter(a=>a.active).length || 0}</div><div class="sub">Active announcements</div></div>
+      <div class="stat-card"><div class="label">App Version</div><div class="value">${config?.find(c=>c.key==='app_version')?.value || '1.0'}</div><div class="sub">Current release</div></div>
+    </div>
+    <div class="section">
+      <div class="section-header"><span class="section-title">Latest Feed Posts</span></div>
+      <table class="table"><thead><tr><th>Title</th><th>Source</th><th>Status</th><th>Created</th></tr></thead><tbody>
+        ${(news||[]).slice(0,5).map(n => `<tr><td>${esc(n.title)}</td><td>${esc(n.source||'')}</td><td>${n.published?'<span class="badge badge-green">Published</span>':'<span class="badge badge-red">Draft</span>'}</td><td>${fmtDate(n.created_at)}</td></tr>`).join('')}
+        ${!news?.length ? '<tr><td colspan="4" class="empty">No feed posts yet</td></tr>' : ''}
+      </tbody></table>
+    </div>
+    <div class="section">
+      <div class="section-header"><span class="section-title">Learn F1 Topics</span></div>
+      <table class="table"><thead><tr><th>Topic</th><th>Icon</th><th>Order</th><th>Status</th></tr></thead><tbody>
+        ${(learn||[]).slice(0,5).map(t => `<tr><td>${esc(t.title_en)}</td><td>${esc(t.icon)}</td><td>${t.sort_order}</td><td>${t.published?'<span class="badge badge-green">Active</span>':'<span class="badge badge-red">Hidden</span>'}</td></tr>`).join('')}
+      </tbody></table>
+    </div>`;
+}
+
+async function loadNews(c) {
+  const news = await api('/news') || [];
+  c.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <span style="color:var(--text2);font-size:13px">${news.length} posts</span>
+      <button class="btn btn-primary" onclick="editNews()">+ Add Post</button>
+    </div>
+    <div class="section"><table class="table"><thead><tr><th>Title</th><th>Source</th><th>Category</th><th>Published</th><th>Actions</th></tr></thead><tbody>
+      ${news.map(n => `<tr>
+        <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(n.title)}</td>
+        <td>${esc(n.source||'-')}</td><td>${esc(n.category||'-')}</td>
+        <td>${n.published?'<span class="badge badge-green">Yes</span>':'<span class="badge badge-red">No</span>'}</td>
+        <td><button class="btn btn-sm" onclick="editNews(${n.id})">Edit</button> <button class="btn btn-sm btn-danger" onclick="deleteItem('news',${n.id})">Delete</button></td>
+      </tr>`).join('')}
+      ${!news.length ? '<tr><td colspan="5" class="empty">No feed posts</td></tr>' : ''}
+    </tbody></table></div>`;
+}
+
+function editNews(id) {
+  const isEdit = !!id;
+  if (isEdit) {
+    api('/news').then(news => {
+      const n = news.find(x => x.id === id);
+      if (!n) return;
+      showNewsModal(n);
+    });
+  } else {
+    showNewsModal({ title: '', description: '', link: '', image_url: '', category: 'Formula 1', source: '', published: true, featured: false });
+  }
+}
+
+function showNewsModal(n) {
+  openModal(n.id ? 'Edit Feed Post' : 'New Feed Post', `
+    <div class="form-group"><label>Title</label><input id="f_title" value="${esc(n.title)}"></div>
+    <div class="form-group"><label>Description</label><textarea id="f_desc">${esc(n.description||'')}</textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Source</label><input id="f_source" value="${esc(n.source||'')}"></div>
+      <div class="form-group"><label>Category</label><input id="f_cat" value="${esc(n.category||'Formula 1')}"></div>
+    </div>
+    <div class="form-group"><label>Link URL</label><input id="f_link" value="${esc(n.link||'')}"></div>
+    <div class="form-group"><label>Image URL</label><input id="f_img" value="${esc(n.image_url||'')}"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Published</label><label class="toggle"><input type="checkbox" id="f_pub" ${n.published?'checked':''}><span class="slider"></span></label></div>
+      <div class="form-group"><label>Featured</label><label class="toggle"><input type="checkbox" id="f_feat" ${n.featured?'checked':''}><span class="slider"></span></label></div>
+    </div>`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveNews(${n.id||'null'})">Save</button>`
+  );
+}
+
+async function saveNews(id) {
+  const data = {
+    title: document.getElementById('f_title').value,
+    description: document.getElementById('f_desc').value,
+    source: document.getElementById('f_source').value,
+    category: document.getElementById('f_cat').value,
+    link: document.getElementById('f_link').value,
+    image_url: document.getElementById('f_img').value,
+    published: document.getElementById('f_pub').checked,
+    featured: document.getElementById('f_feat').checked,
+  };
+  if (!data.title) return showToast('Title is required', '#ef4444');
+  await api(id ? `/news/${id}` : '/news', { method: id ? 'PUT' : 'POST', body: data });
+  closeModal();
+  showToast(id ? 'Feed post updated' : 'Feed post created');
+  loadPage('news');
+}
+
+async function loadLearn(c) {
+  const topics = await api('/learn') || [];
+  c.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <span style="color:var(--text2);font-size:13px">${topics.length} topics</span>
+      <button class="btn btn-primary" onclick="editLearn()">+ Add Topic</button>
+    </div>
+    <div class="section"><table class="table"><thead><tr><th>Order</th><th>Title (EN)</th><th>Icon</th><th>FR</th><th>AR</th><th>Published</th><th>Actions</th></tr></thead><tbody>
+      ${topics.map(t => `<tr>
+        <td>${t.sort_order}</td><td>${esc(t.title_en)}</td><td>${esc(t.icon)}</td>
+        <td>${t.title_fr?'<span class="badge badge-green">Yes</span>':'<span class="badge badge-yellow">No</span>'}</td>
+        <td>${t.title_ar?'<span class="badge badge-green">Yes</span>':'<span class="badge badge-yellow">No</span>'}</td>
+        <td>${t.published?'<span class="badge badge-green">Yes</span>':'<span class="badge badge-red">No</span>'}</td>
+        <td><button class="btn btn-sm" onclick="editLearn(${t.id})">Edit</button> <button class="btn btn-sm btn-danger" onclick="deleteItem('learn',${t.id})">Delete</button></td>
+      </tr>`).join('')}
+      ${!topics.length ? '<tr><td colspan="7" class="empty">No topics</td></tr>' : ''}
+    </tbody></table></div>`;
+}
+
+function editLearn(id) {
+  if (id) {
+    api('/learn').then(topics => {
+      const t = topics.find(x => x.id === id);
+      if (t) showLearnModal(t);
+    });
+  } else {
+    showLearnModal({ title_en:'', title_fr:'', title_ar:'', content_en:'', content_fr:'', content_ar:'', icon:'book-outline', sort_order:0, published:true });
+  }
+}
+
+function showLearnModal(t) {
+  openModal(t.id ? 'Edit Topic' : 'New Topic', `
+    <div class="form-row">
+      <div class="form-group"><label>Title (English)</label><input id="f_ten" value="${esc(t.title_en)}"></div>
+      <div class="form-group"><label>Icon (Ionicons)</label><input id="f_icon" value="${esc(t.icon||'book-outline')}"></div>
+    </div>
+    <div class="form-group"><label>Content (English)</label><textarea id="f_cen">${esc(t.content_en||'')}</textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Title (French)</label><input id="f_tfr" value="${esc(t.title_fr||'')}"></div>
+      <div class="form-group"><label>Title (Arabic)</label><input id="f_tar" value="${esc(t.title_ar||'')}" dir="rtl"></div>
+    </div>
+    <div class="form-group"><label>Content (French)</label><textarea id="f_cfr">${esc(t.content_fr||'')}</textarea></div>
+    <div class="form-group"><label>Content (Arabic)</label><textarea id="f_car" dir="rtl">${esc(t.content_ar||'')}</textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Sort Order</label><input type="number" id="f_order" value="${t.sort_order||0}"></div>
+      <div class="form-group"><label>Published</label><label class="toggle"><input type="checkbox" id="f_pub" ${t.published?'checked':''}><span class="slider"></span></label></div>
+    </div>`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveLearn(${t.id||'null'})">Save</button>`
+  );
+}
+
+async function saveLearn(id) {
+  const data = {
+    title_en: document.getElementById('f_ten').value,
+    title_fr: document.getElementById('f_tfr').value,
+    title_ar: document.getElementById('f_tar').value,
+    content_en: document.getElementById('f_cen').value,
+    content_fr: document.getElementById('f_cfr').value,
+    content_ar: document.getElementById('f_car').value,
+    icon: document.getElementById('f_icon').value,
+    sort_order: parseInt(document.getElementById('f_order').value) || 0,
+    published: document.getElementById('f_pub').checked,
+  };
+  if (!data.title_en) return showToast('English title is required', '#ef4444');
+  await api(id ? `/learn/${id}` : '/learn', { method: id ? 'PUT' : 'POST', body: data });
+  closeModal();
+  showToast(id ? 'Topic updated' : 'Topic created');
+  loadPage('learn');
+}
+
+async function loadAnnouncements(c) {
+  const items = await api('/announcements') || [];
+  c.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <span style="color:var(--text2);font-size:13px">${items.length} announcements</span>
+      <button class="btn btn-primary" onclick="editAnnouncement()">+ New Announcement</button>
+    </div>
+    <div class="section"><table class="table"><thead><tr><th>Title</th><th>Type</th><th>Active</th><th>Created</th><th>Actions</th></tr></thead><tbody>
+      ${items.map(a => `<tr>
+        <td>${esc(a.title_en)}</td>
+        <td><span class="badge badge-${a.type==='urgent'?'red':a.type==='warning'?'yellow':'blue'}">${esc(a.type)}</span></td>
+        <td>${a.active?'<span class="badge badge-green">Active</span>':'<span class="badge badge-red">Inactive</span>'}</td>
+        <td>${fmtDate(a.created_at)}</td>
+        <td><button class="btn btn-sm" onclick="editAnnouncement(${a.id})">Edit</button> <button class="btn btn-sm btn-danger" onclick="deleteItem('announcements',${a.id})">Delete</button></td>
+      </tr>`).join('')}
+      ${!items.length ? '<tr><td colspan="5" class="empty">No announcements</td></tr>' : ''}
+    </tbody></table></div>`;
+}
+
+function editAnnouncement(id) {
+  if (id) {
+    api('/announcements').then(items => {
+      const a = items.find(x => x.id === id);
+      if (a) showAnnouncementModal(a);
+    });
+  } else {
+    showAnnouncementModal({ title_en:'', title_fr:'', title_ar:'', body_en:'', body_fr:'', body_ar:'', type:'info', active:true });
+  }
+}
+
+function showAnnouncementModal(a) {
+  openModal(a.id ? 'Edit Announcement' : 'New Announcement', `
+    <div class="form-group"><label>Title (English)</label><input id="f_ten" value="${esc(a.title_en)}"></div>
+    <div class="form-group"><label>Body (English)</label><textarea id="f_ben">${esc(a.body_en||'')}</textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Title (French)</label><input id="f_tfr" value="${esc(a.title_fr||'')}"></div>
+      <div class="form-group"><label>Title (Arabic)</label><input id="f_tar" value="${esc(a.title_ar||'')}" dir="rtl"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Body (French)</label><textarea id="f_bfr">${esc(a.body_fr||'')}</textarea></div>
+      <div class="form-group"><label>Body (Arabic)</label><textarea id="f_bar" dir="rtl">${esc(a.body_ar||'')}</textarea></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Type</label><select id="f_type"><option value="info" ${a.type==='info'?'selected':''}>Info</option><option value="warning" ${a.type==='warning'?'selected':''}>Warning</option><option value="urgent" ${a.type==='urgent'?'selected':''}>Urgent</option></select></div>
+      <div class="form-group"><label>Active</label><label class="toggle"><input type="checkbox" id="f_active" ${a.active?'checked':''}><span class="slider"></span></label></div>
+    </div>`,
+    `<button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveAnnouncement(${a.id||'null'})">Save</button>`
+  );
+}
+
+async function saveAnnouncement(id) {
+  const data = {
+    title_en: document.getElementById('f_ten').value,
+    title_fr: document.getElementById('f_tfr').value || null,
+    title_ar: document.getElementById('f_tar').value || null,
+    body_en: document.getElementById('f_ben').value || null,
+    body_fr: document.getElementById('f_bfr').value || null,
+    body_ar: document.getElementById('f_bar').value || null,
+    type: document.getElementById('f_type').value,
+    active: document.getElementById('f_active').checked,
+  };
+  if (!data.title_en) return showToast('English title is required', '#ef4444');
+  await api(id ? `/announcements/${id}` : '/announcements', { method: id ? 'PUT' : 'POST', body: data });
+  closeModal();
+  showToast(id ? 'Announcement updated' : 'Announcement created');
+  loadPage('announcements');
+}
+
+async function loadConfig(c) {
+  const config = await api('/config') || [];
+  const configMap = {};
+  config.forEach(c => configMap[c.key] = c.value);
+  c.innerHTML = `
+    <div class="section">
+      <div class="section-header"><span class="section-title">App Settings</span></div>
+      <div style="padding:20px">
+        <div class="form-row">
+          <div class="form-group"><label>Default Language</label>
+            <select id="cfg_lang"><option value="en" ${configMap.default_language==='en'?'selected':''}>English</option><option value="fr" ${configMap.default_language==='fr'?'selected':''}>French</option><option value="ar" ${configMap.default_language==='ar'?'selected':''}>Arabic</option></select>
+          </div>
+          <div class="form-group"><label>App Version</label><input id="cfg_ver" value="${esc(configMap.app_version||'1.0.0')}"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Show Learn F1</label><label class="toggle"><input type="checkbox" id="cfg_learn" ${configMap.show_learn_f1==='true'?'checked':''}><span class="slider"></span></label></div>
+          <div class="form-group"><label>Show News</label><label class="toggle"><input type="checkbox" id="cfg_news" ${configMap.show_news==='true'?'checked':''}><span class="slider"></span></label></div>
+        </div>
+        <div class="form-group"><label>Featured Banner Enabled</label><label class="toggle"><input type="checkbox" id="cfg_banner" ${configMap.featured_banner_enabled==='true'?'checked':''}><span class="slider"></span></label></div>
+        <div class="form-group"><label>Featured Banner Text</label><input id="cfg_banner_text" value="${esc(configMap.featured_banner_text||'')}"></div>
+        <div style="margin-top:16px"><button class="btn btn-primary" onclick="saveConfig()">Save Settings</button></div>
+      </div>
+    </div>`;
+}
+
+async function saveConfig() {
+  const configs = {
+    default_language: document.getElementById('cfg_lang').value,
+    app_version: document.getElementById('cfg_ver').value,
+    show_learn_f1: document.getElementById('cfg_learn').checked ? 'true' : 'false',
+    show_news: document.getElementById('cfg_news').checked ? 'true' : 'false',
+    featured_banner_enabled: document.getElementById('cfg_banner').checked ? 'true' : 'false',
+    featured_banner_text: document.getElementById('cfg_banner_text').value,
+  };
+  await api('/config', { method: 'PUT', body: configs });
+  showToast('Settings saved');
+}
+
+async function deleteItem(type, id) {
+  if (!confirm('Are you sure you want to delete this item?')) return;
+  await api(`/${type}/${id}`, { method: 'DELETE' });
+  showToast('Item deleted');
+  loadPage(currentPage);
+}
+
+function logout() {
+  localStorage.removeItem('admin_token');
+  window.location.href = '/admin/login';
+}
+
+function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(d) { if (!d) return '-'; try { return new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); } catch { return '-'; } }
+
+if (!token) { window.location.href = '/admin/login'; }
+else { loadPage('dashboard'); }
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+{
+  "dir": "rtl",
+  "nav": {
+    "home": "الرئيسية",
+    "live": "مباشر",
+    "drivers": "السائقون",
+    "standings": "الترتيب",
+    "news": "الأخبار",
+    "explore": "استكشاف"
+  },
+  "home": {
+    "season": "موسم 2026",
+    "championship_battle": "معركة البطولة",
+    "see_all": "عرض الكل",
+    "next_race": "السباق القادم",
+    "round": "الجولة"
+  },
+  "live": {
+    "live_now": "مباشر الآن",
+    "recent": "الأخيرة",
+    "positions": "المراكز",
+    "race_control": "إدارة السباق",
+    "timing": "التوقيت"
+  },
+  "news": {
+    "title": "الأخبار",
+    "subtitle": "آخر عناوين الفورمولا 1",
+    "fetching": "جارٍ تحميل الأخبار...",
+    "retry": "إعادة المحاولة",
+    "no_articles": "لا توجد مقالات متاحة"
+  },
+  "drivers": {
+    "title": "السائقون",
+    "search_placeholder": "البحث عن سائقين...",
+    "all_teams": "جميع الفرق"
+  },
+  "standings": {
+    "title": "الترتيب",
+    "drivers_championship": "بطولة السائقين",
+    "constructors_championship": "بطولة الصانعين"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "language": "اللغة",
+    "select_language": "اختر اللغة",
+    "notifications": "الإشعارات"
+  },
+  "learn": {
+    "title": "تعلّم الفورمولا 1",
+    "subtitle": "اكتشف عالم الفورمولا 1"
+  },
+  "common": {
+    "loading": "جارٍ التحميل...",
+    "error": "خطأ",
+    "retry": "إعادة المحاولة",
+    "back": "رجوع",
+    "see_all": "عرض الكل",
+    "points": "نقاط",
+    "wins": "انتصارات",
+    "podiums": "منصات تتويج"
+  }
+}

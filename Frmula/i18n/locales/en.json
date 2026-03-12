@@ -1,0 +1,61 @@
+{
+  "nav": {
+    "home": "Home",
+    "live": "Live",
+    "drivers": "Drivers",
+    "standings": "Standings",
+    "news": "News",
+    "explore": "Explore"
+  },
+  "home": {
+    "season": "2026 Season",
+    "championship_battle": "Championship Battle",
+    "see_all": "See All",
+    "next_race": "Next Race",
+    "round": "Round"
+  },
+  "live": {
+    "live_now": "Live Now",
+    "recent": "Recent",
+    "positions": "Positions",
+    "race_control": "Race Control",
+    "timing": "Timing"
+  },
+  "news": {
+    "title": "News",
+    "subtitle": "Latest F1 Headlines",
+    "fetching": "Fetching latest news...",
+    "retry": "Retry",
+    "no_articles": "No articles available"
+  },
+  "drivers": {
+    "title": "Drivers",
+    "search_placeholder": "Search drivers...",
+    "all_teams": "All Teams"
+  },
+  "standings": {
+    "title": "Standings",
+    "drivers_championship": "Drivers' Championship",
+    "constructors_championship": "Constructors' Championship"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "select_language": "Select Language",
+    "notifications": "Notifications"
+  },
+  "learn": {
+    "title": "Learn F1",
+    "subtitle": "Discover the world of Formula 1"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "back": "Back",
+    "see_all": "See All",
+    "points": "Points",
+    "wins": "Wins",
+    "podiums": "Podiums"
+  }
+}

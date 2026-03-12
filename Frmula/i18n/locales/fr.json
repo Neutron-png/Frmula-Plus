@@ -1,0 +1,61 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "live": "En Direct",
+    "drivers": "Pilotes",
+    "standings": "Classements",
+    "news": "Actualités",
+    "explore": "Explorer"
+  },
+  "home": {
+    "season": "Saison 2026",
+    "championship_battle": "Course au Titre",
+    "see_all": "Voir Tout",
+    "next_race": "Prochaine Course",
+    "round": "Manche"
+  },
+  "live": {
+    "live_now": "En Direct",
+    "recent": "Récent",
+    "positions": "Positions",
+    "race_control": "Direction de Course",
+    "timing": "Chronométrage"
+  },
+  "news": {
+    "title": "Actualités",
+    "subtitle": "Dernières Nouvelles F1",
+    "fetching": "Chargement des actualités...",
+    "retry": "Réessayer",
+    "no_articles": "Aucun article disponible"
+  },
+  "drivers": {
+    "title": "Pilotes",
+    "search_placeholder": "Rechercher des pilotes...",
+    "all_teams": "Toutes les Écuries"
+  },
+  "standings": {
+    "title": "Classements",
+    "drivers_championship": "Championnat des Pilotes",
+    "constructors_championship": "Championnat des Constructeurs"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "language": "Langue",
+    "select_language": "Choisir la Langue",
+    "notifications": "Notifications"
+  },
+  "learn": {
+    "title": "Apprendre la F1",
+    "subtitle": "Découvrez le monde de la Formule 1"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "retry": "Réessayer",
+    "back": "Retour",
+    "see_all": "Voir Tout",
+    "points": "Points",
+    "wins": "Victoires",
+    "podiums": "Podiums"
+  }
+}
