@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
-  Linking,
   ActivityIndicator,
   Image,
 } from "react-native";
@@ -15,304 +14,344 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { Colors } from "@/constants/colors";
 
-interface F1NewsItem {
-  title: string;
-  link: string;
-  description: string;
-  category: string;
-  pubDate: string;
-  imageURL: string;
+type FeedCategory = "all" | "official" | "teams" | "drivers" | "media";
+
+interface FeedMediaItem {
+  type: string;
+  url: string;
 }
 
-interface F1NewsResponse {
-  F1News: F1NewsItem[];
+interface FeedItem {
+  id: string;
+  likes: number;
+  comments: number;
+  reposts: number;
+  verified?: boolean;
+  authorName: string;
+  authorHandle: string;
+  authorAvatar?: string;
+  body: string;
+  category: Exclude<FeedCategory, "all">;
+  publishedAt: string;
+  sourceUrl?: string;
+  media?: FeedMediaItem[];
 }
 
-const RAPIDAPI_KEY = process.env.EXPO_PUBLIC_RAPIDAPI_KEY || "";
-
-const FEED_ACCOUNTS = [
-  { source: "F1.COM", handle: "@Formula1", accent: "#E10600" },
-  { source: "SKY F1", handle: "@SkySportsF1", accent: "#FFFFFF" },
-  { source: "AUTOSPORT", handle: "@autosport", accent: "#E10600" },
-  { source: "MOTORSPORT", handle: "@Motorsport", accent: "#FFFFFF" },
-  { source: "BBC SPORT", handle: "@BBCSport", accent: "#E10600" },
-  { source: "PLANET F1", handle: "@Planet_F1", accent: "#FFFFFF" },
-  { source: "GP FANS", handle: "@GPFansGlobal", accent: "#E10600" },
-];
-
-async function fetchF1News(): Promise<F1NewsItem[]> {
-  const res = await fetch("https://f1-news1.p.rapidapi.com/f1news", {
-    headers: {
-      "x-rapidapi-key": RAPIDAPI_KEY,
-      "x-rapidapi-host": "f1-news1.p.rapidapi.com",
-    },
-  });
-  if (!res.ok) throw new Error(`News API error: ${res.status}`);
-  const data: F1NewsResponse = await res.json();
-  if (!data.F1News || !Array.isArray(data.F1News)) return [];
-  const seen = new Set<string>();
-  return data.F1News.filter((item) => {
-    if (!item.title || seen.has(item.title)) return false;
-    seen.add(item.title);
-    return true;
-  });
+interface FeedResponse {
+  items: FeedItem[];
+  section?: {
+    title?: string;
+    subtitle?: string;
+  };
 }
 
-function decodeHtmlEntities(text: string) {
-  return text
-    .replace(/&#039;/g, "'")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#x27;/g, "'")
-    .replace(/&#x2F;/g, "/");
-}
+const FEED_API_BASE_URL =
+  process.env.EXPO_PUBLIC_FEED_API_BASE_URL ||
+  process.env.EXPO_PUBLIC_API_BASE_URL ||
+  "";
 
-function getSourceFromLink(link: string): string {
-  try {
-    const hostname = new URL(link).hostname.replace("www.", "");
-    if (hostname.includes("f1reader")) return "F1 READER";
-    if (hostname.includes("f1technical")) return "F1 TECHNICAL";
-    if (hostname.includes("autosport")) return "AUTOSPORT";
-    if (hostname.includes("motorsport")) return "MOTORSPORT";
-    if (hostname.includes("bbc")) return "BBC SPORT";
-    if (hostname.includes("skysports")) return "SKY F1";
-    if (hostname.includes("espn")) return "ESPN";
-    if (hostname.includes("gpfans")) return "GP FANS";
-    if (hostname.includes("planetf1")) return "PLANET F1";
-    if (hostname.includes("crash.net")) return "CRASH.NET";
-    if (hostname.includes("formula1")) return "F1.COM";
-    return hostname.split(".")[0].toUpperCase();
-  } catch {
-    return "F1 NEWS";
+async function fetchFeed(): Promise<FeedResponse> {
+  if (!FEED_API_BASE_URL) {
+    throw new Error("Missing FEED API base URL");
   }
+
+  const res = await fetch(`${FEED_API_BASE_URL}/api/feed`);
+
+  if (!res.ok) {
+    throw new Error(`Feed API error: ${res.status}`);
+  }
+
+  const data: FeedResponse = await res.json();
+  return data;
 }
 
-function formatTimeAgo(pubDate: string): string {
+function formatTimeAgo(dateString: string): string {
   try {
-    const published = new Date(pubDate);
+    const published = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - published.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 1) return "now";
+
+    if (diffMins < 1) return "Just now";
     if (diffMins < 60) return `${diffMins}m`;
     const diffHours = Math.floor(diffMins / 60);
     if (diffHours < 24) return `${diffHours}h`;
     const diffDays = Math.floor(diffHours / 24);
     if (diffDays < 7) return `${diffDays}d`;
-    return published.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+    return published.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
   } catch {
     return "";
   }
 }
 
-function getFeedMeta(link: string) {
-  const source = getSourceFromLink(link);
-  const preset = FEED_ACCOUNTS.find((account) => account.source === source);
-  if (preset) return preset;
-  return {
-    source,
-    handle: `@${source.toLowerCase().replace(/[^a-z0-9]+/g, "")}`,
-    accent: Colors.red,
-  };
+function categoryLabel(category: FeedCategory): string {
+  switch (category) {
+    case "all":
+      return "All";
+    case "official":
+      return "Official";
+    case "teams":
+      return "Teams";
+    case "drivers":
+      return "Drivers";
+    case "media":
+      return "Media";
+    default:
+      return "All";
+  }
 }
 
-function initials(label: string) {
-  return label
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+function getCategoryColor(category: FeedCategory): string {
+  switch (category) {
+    case "official":
+      return Colors.red;
+    case "teams":
+      return "#FF8A80";
+    case "drivers":
+      return "#FFB3B3";
+    case "media":
+      return "#D9D9D9";
+    default:
+      return Colors.red;
+  }
 }
 
-function FeedCard({ item, index }: { item: F1NewsItem; index: number }) {
-  const meta = getFeedMeta(item.link);
-  const timeAgo = formatTimeAgo(item.pubDate);
-  const title = decodeHtmlEntities(item.title);
-  const body = decodeHtmlEntities(item.description || "");
-  const hasImage = item.imageURL && item.imageURL.startsWith("http");
-
+function FeedFilterChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
   return (
     <TouchableOpacity
-      style={styles.feedCard}
-      activeOpacity={0.88}
-      onPress={() => item.link?.startsWith("http") && Linking.openURL(item.link)}
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={[styles.filterChip, active && styles.filterChipActive]}
     >
-      <View style={styles.feedHeader}>
-        <View style={[styles.avatar, { backgroundColor: meta.accent }]}>
-          <Text style={styles.avatarText}>{initials(meta.source)}</Text>
-        </View>
-        <View style={styles.feedHeaderText}>
-          <View style={styles.nameRow}>
-            <Text style={styles.feedName}>{meta.source}</Text>
-            <Ionicons name="checkmark-circle" size={14} color={Colors.red} />
-            <Text style={styles.feedHandle}>{meta.handle}</Text>
-            <Text style={styles.feedDot}>·</Text>
-            <Text style={styles.feedHandle}>{timeAgo}</Text>
-          </View>
-          {!!item.category && <Text style={styles.feedMeta}>{item.category}</Text>}
-        </View>
-        <TouchableOpacity style={styles.moreButton}>
-          <Ionicons name="ellipsis-horizontal" size={18} color={Colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
+      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
 
-      <View style={styles.feedBody}>
-        <Text style={styles.feedTitle}>{title}</Text>
-        {!!body && <Text style={styles.feedDescription}>{body}</Text>}
+function FeedCard({ item }: { item: FeedItem }) {
+  const firstMedia = item.media?.[0]?.url;
+  const hasMedia = !!firstMedia;
+  const timeAgo = formatTimeAgo(item.publishedAt);
 
-        {hasImage ? (
-          <Image source={{ uri: item.imageURL }} style={styles.feedImage} resizeMode="cover" />
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        {item.authorAvatar ? (
+          <Image source={{ uri: item.authorAvatar }} style={styles.avatar} />
         ) : (
-          <View style={styles.linkPreview}>
-            <View style={styles.linkPreviewLine} />
-            <Text style={styles.linkPreviewText}>Open full update</Text>
+          <View style={styles.avatarFallback}>
+            <Ionicons name="person" size={16} color={Colors.white} />
           </View>
         )}
+
+        <View style={styles.cardHeaderText}>
+          <View style={styles.cardHeaderTopRow}>
+            <Text style={styles.authorName}>{item.authorName || "Unknown"}</Text>
+
+            <View
+              style={[
+                styles.categoryBadge,
+                { backgroundColor: getCategoryColor(item.category) + "22" },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.categoryBadgeText,
+                  { color: getCategoryColor(item.category) },
+                ]}
+              >
+                {item.category}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.authorMeta}>
+            @{item.authorHandle || "unknown"} · {timeAgo}
+          </Text>
+        </View>
       </View>
 
-      <View style={styles.feedActions}>
+      <Text style={styles.contentText}>{item.body}</Text>
+
+      {hasMedia ? (
+        <Image source={{ uri: firstMedia }} style={styles.mediaImage} resizeMode="cover" />
+      ) : null}
+
+      <View style={styles.actionsRow}>
         <View style={styles.actionItem}>
-          <Ionicons name="chatbubble-outline" size={18} color={Colors.textSecondary} />
-          <Text style={styles.actionText}>{12 + index}</Text>
+          <Ionicons name="heart-outline" size={14} color={Colors.textTertiary} />
+          <Text style={styles.actionText}>{item.likes ?? 0}</Text>
         </View>
+
         <View style={styles.actionItem}>
-          <Ionicons name="repeat-outline" size={18} color={Colors.textSecondary} />
-          <Text style={styles.actionText}>{4 + (index % 6)}</Text>
+          <Ionicons
+            name="chatbubble-ellipses-outline"
+            size={14}
+            color={Colors.textTertiary}
+          />
+          <Text style={styles.actionText}>{item.comments ?? 0}</Text>
         </View>
+
         <View style={styles.actionItem}>
-          <Ionicons name="heart-outline" size={18} color={Colors.textSecondary} />
-          <Text style={styles.actionText}>{41 + index * 3}</Text>
+          <Ionicons name="repeat-outline" size={14} color={Colors.textTertiary} />
+          <Text style={styles.actionText}>{item.reposts ?? 0}</Text>
         </View>
-        <Ionicons name="share-social-outline" size={18} color={Colors.textSecondary} />
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const [activeFilter, setActiveFilter] = useState<FeedCategory>("all");
 
-  const { data: news, isLoading, isError, refetch } = useQuery<F1NewsItem[]>({
-    queryKey: ["f1-feed-rapidapi"],
-    queryFn: fetchF1News,
-    staleTime: 5 * 60 * 1000,
-    retry: 2,
+  const { data, isLoading, isError, refetch } = useQuery<FeedResponse>({
+    queryKey: ["frmula-feed"],
+    queryFn: fetchFeed,
+    staleTime: 60 * 1000,
+    retry: 1,
   });
 
-  const hasNews = !!news?.length;
+  const feedItems = data?.items ?? [];
+  const sectionTitle = data?.section?.title || "FEED";
+  const sectionSubtitle =
+    data?.section?.subtitle || "Paddock updates in a social timeline view";
+
+  const filteredFeed = useMemo(() => {
+    if (activeFilter === "all") return feedItems;
+    return feedItems.filter((item) => item.category === activeFilter);
+  }, [feedItems, activeFilter]);
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.headerWrap, { paddingTop: topPadding + 12 }]}> 
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 110 }}
+      >
+        <View style={[styles.headerWrap, { paddingTop: topPadding + 12 }]}>
           <View style={styles.headerRow}>
             <View>
-              <Text style={styles.pageTitle}>FEED</Text>
-              <Text style={styles.subtitle}>Paddock updates in a social timeline view</Text>
+              <Text style={styles.pageTitle}>{sectionTitle}</Text>
+              <Text style={styles.subtitle}>{sectionSubtitle}</Text>
             </View>
+
             <TouchableOpacity style={styles.refreshButton} onPress={() => refetch()}>
               <Ionicons name="refresh" size={18} color={Colors.white} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-            {['All', 'Official', 'Teams', 'Drivers', 'Media'].map((filter, index) => (
-              <View key={filter} style={[styles.filterChip, index === 0 && styles.filterChipActive]}>
-                <Text style={[styles.filterChipText, index === 0 && styles.filterChipTextActive]}>{filter}</Text>
-              </View>
-            ))}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filtersRow}
+          >
+            {(["all", "official", "teams", "drivers", "media"] as FeedCategory[]).map(
+              (filter) => (
+                <FeedFilterChip
+                  key={filter}
+                  label={categoryLabel(filter)}
+                  active={activeFilter === filter}
+                  onPress={() => setActiveFilter(filter)}
+                />
+              )
+            )}
           </ScrollView>
         </View>
 
-        {isLoading ? (
-          <View style={styles.stateCard}>
-            <ActivityIndicator color={Colors.red} size="large" />
-            <Text style={styles.stateTitle}>Loading feed</Text>
-            <Text style={styles.stateText}>Pulling the latest paddock updates…</Text>
-          </View>
-        ) : null}
+        <View style={styles.content}>
+          {isLoading && (
+            <View style={styles.stateCard}>
+              <ActivityIndicator color={Colors.red} size="large" />
+              <Text style={styles.stateTitle}>Loading feed...</Text>
+              <Text style={styles.stateText}>Fetching the latest paddock updates.</Text>
+            </View>
+          )}
 
-        {!isLoading && isError ? (
-          <View style={styles.stateCard}>
-            <Ionicons name="warning-outline" size={34} color={Colors.red} />
-            <Text style={styles.stateTitle}>Feed unavailable</Text>
-            <Text style={styles.stateText}>Couldn’t load the latest updates right now.</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
-              <Text style={styles.retryButtonText}>Try again</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
+          {!isLoading && isError && (
+            <View style={styles.stateCard}>
+              <Ionicons name="warning-outline" size={34} color={Colors.red} />
+              <Text style={styles.stateTitle}>Feed unavailable</Text>
+              <Text style={styles.stateText}>
+                Couldn&apos;t load the latest updates right now.
+              </Text>
+              <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+                <Text style={styles.retryButtonText}>Try again</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-        {!isLoading && !isError && hasNews ? (
-          <View style={styles.feedList}>
-            {news!.map((item, index) => (
-              <FeedCard item={item} index={index} key={`${item.link}-${index}`} />
-            ))}
-          </View>
-        ) : null}
+          {!isLoading && !isError && filteredFeed.length === 0 && (
+            <View style={styles.stateCard}>
+              <Ionicons name="newspaper-outline" size={34} color={Colors.textTertiary} />
+              <Text style={styles.stateTitle}>No feed items</Text>
+              <Text style={styles.stateText}>
+                There are no posts in this category yet.
+              </Text>
+            </View>
+          )}
 
-        {!isLoading && !isError && !hasNews ? (
-          <View style={styles.stateCard}>
-            <Ionicons name="newspaper-outline" size={34} color={Colors.textSecondary} />
-            <Text style={styles.stateTitle}>No feed items yet</Text>
-            <Text style={styles.stateText}>Updates will show here as soon as content is available.</Text>
-          </View>
-        ) : null}
+          {!isLoading &&
+            !isError &&
+            filteredFeed.map((item) => <FeedCard key={item.id} item={item} />)}
+        </View>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.bg,
-  },
-  scrollContent: {
-    paddingBottom: 110,
-  },
-  headerWrap: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 14,
-  },
+  container: { flex: 1, backgroundColor: Colors.bg },
+  headerWrap: { paddingHorizontal: 16, marginBottom: 14 },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   pageTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 28,
     color: Colors.white,
-    fontSize: 30,
-    fontWeight: "800",
-    letterSpacing: 1.2,
+    letterSpacing: -0.6,
+    marginBottom: 4,
   },
   subtitle: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
     color: Colors.textSecondary,
-    fontSize: 14,
-    marginTop: 4,
   },
   refreshButton: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: Colors.cardAlt,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: Colors.card,
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  filterRow: {
+  filtersRow: {
     gap: 10,
-    paddingRight: 16,
+    paddingTop: 16,
+    paddingRight: 12,
   },
   filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 999,
     backgroundColor: Colors.card,
     borderWidth: 1,
@@ -323,118 +362,129 @@ const styles = StyleSheet.create({
     borderColor: Colors.red,
   },
   filterChipText: {
-    color: Colors.textSecondary,
+    fontFamily: "Inter_500Medium",
     fontSize: 13,
-    fontWeight: "600",
+    color: Colors.textSecondary,
   },
   filterChipTextActive: {
     color: Colors.white,
+    fontFamily: "Inter_700Bold",
   },
-  feedList: {
+  content: {
+    paddingHorizontal: 16,
     gap: 12,
-    paddingHorizontal: 12,
   },
-  feedCard: {
+  stateCard: {
+    marginTop: 8,
     backgroundColor: Colors.card,
     borderRadius: 22,
+    paddingHorizontal: 20,
+    paddingVertical: 28,
+    alignItems: "center",
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: 14,
-    gap: 12,
+    gap: 10,
   },
-  feedHeader: {
+  stateTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 17,
+    color: Colors.white,
+  },
+  stateText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  retryButton: {
+    marginTop: 6,
+    backgroundColor: Colors.red,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 999,
+  },
+  retryButtonText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
+    color: Colors.white,
+  },
+  card: {
+    backgroundColor: Colors.card,
+    borderRadius: 22,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  cardHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 10,
+    gap: 12,
+    marginBottom: 12,
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#222",
+  },
+  avatarFallback: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: Colors.red,
     alignItems: "center",
+    justifyContent: "center",
   },
-  avatarText: {
-    color: Colors.white,
-    fontWeight: "800",
-    fontSize: 14,
-  },
-  feedHeaderText: {
+  cardHeaderText: {
     flex: 1,
-    gap: 2,
   },
-  nameRow: {
+  cardHeaderTopRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 2,
   },
-  feedName: {
+  authorName: {
+    flex: 1,
+    fontFamily: "Inter_700Bold",
+    fontSize: 17,
     color: Colors.white,
-    fontWeight: "700",
-    fontSize: 15,
   },
-  feedHandle: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-  },
-  feedDot: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-  },
-  feedMeta: {
-    color: Colors.textTertiary,
+  authorMeta: {
+    fontFamily: "Inter_400Regular",
     fontSize: 12,
-  },
-  moreButton: {
-    padding: 4,
-  },
-  feedBody: {
-    paddingLeft: 54,
-    gap: 10,
-  },
-  feedTitle: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: "700",
-    lineHeight: 22,
-  },
-  feedDescription: {
     color: Colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
   },
-  feedImage: {
+  categoryBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  categoryBadgeText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+    textTransform: "capitalize",
+  },
+  contentText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 15,
+    lineHeight: 22,
+    color: Colors.white,
+    marginBottom: 12,
+  },
+  mediaImage: {
     width: "100%",
     height: 210,
     borderRadius: 18,
-    backgroundColor: Colors.cardAlt,
+    marginBottom: 14,
+    backgroundColor: "#1a1a1a",
   },
-  linkPreview: {
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.cardAlt,
-    padding: 18,
-    gap: 12,
-  },
-  linkPreviewLine: {
-    height: 2,
-    width: 56,
-    backgroundColor: Colors.red,
-    borderRadius: 999,
-  },
-  linkPreviewText: {
-    color: Colors.white,
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  feedActions: {
-    marginLeft: 54,
-    paddingTop: 4,
+  actionsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    gap: 18,
   },
   actionItem: {
     flexDirection: "row",
@@ -442,42 +492,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   actionText: {
-    color: Colors.textSecondary,
+    fontFamily: "Inter_400Regular",
     fontSize: 12,
-    fontWeight: "600",
-  },
-  stateCard: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 24,
-    borderRadius: 22,
-    backgroundColor: Colors.card,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: "center",
-    gap: 10,
-  },
-  stateTitle: {
-    color: Colors.white,
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  stateText: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  retryButton: {
-    marginTop: 8,
-    backgroundColor: Colors.red,
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  retryButtonText: {
-    color: Colors.white,
-    fontWeight: "700",
-    fontSize: 13,
+    color: Colors.textTertiary,
   },
 });
