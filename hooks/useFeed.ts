@@ -1,0 +1,143 @@
+import { useEffect, useRef, useState, useCallback } from "react";
+import type { FeedItem } from "@/components/feed/FeedCard";
+
+const FEED_API = (process.env.EXPO_PUBLIC_FEED_API_BASE_URL || "").replace(/\/$/, "");
+const POLL_INTERVAL_MS = 30_000; // poll every 30s
+
+interface UseFeedResult {
+  items: FeedItem[];
+  isLoading: boolean;
+  isError: boolean;
+  errorMessage: string;
+  isLive: boolean;
+  newCount: number;
+  clearNewCount: () => void;
+  refetch: () => void;
+}
+
+export function useFeed(category: string): UseFeedResult {
+  const [allItems, setAllItems] = useState<FeedItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isLive, setIsLive] = useState(false);
+  const [newCount, setNewCount] = useState(0);
+
+  const latestTimestampRef = useRef<string | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mountedRef = useRef(true);
+  const isFirstLoad = useRef(true);
+
+  // Merge incoming items — dedup + sort newest first
+  const mergeItems = useCallback((incoming: FeedItem[], isNew = false) => {
+    if (!incoming.length) return;
+    setAllItems((prev) => {
+      const map = new Map(prev.map((i) => [i.id, i]));
+      let addedCount = 0;
+      for (const item of incoming) {
+        if (!map.has(item.id)) {
+          map.set(item.id, item);
+          addedCount++;
+        }
+      }
+      if (addedCount === 0) return prev;
+      if (isNew) setNewCount((n) => n + addedCount);
+      const sorted = [...map.values()].sort(
+        (a, b) =>
+          new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+      );
+      if (sorted[0]) latestTimestampRef.current = sorted[0].publishedAt;
+      return sorted;
+    });
+  }, []);
+
+  const fetchFeed = useCallback(
+    async (since?: string) => {
+      if (!FEED_API) {
+        setIsError(true);
+        setErrorMessage(
+          "EXPO_PUBLIC_FEED_API_BASE_URL is not set in .env"
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const url = since
+          ? `${FEED_API}/api/feed?since=${encodeURIComponent(since)}`
+          : `${FEED_API}/api/feed`;
+
+        // AbortController works in React Native / Hermes
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 15000);
+
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
+
+        if (!res.ok) throw new Error(`Server error: HTTP ${res.status}`);
+
+        const data = await res.json();
+        const items: FeedItem[] = data.items ?? data.section?.items ?? [];
+
+        if (!mountedRef.current) return;
+
+        mergeItems(items, !isFirstLoad.current);
+        isFirstLoad.current = false;
+        setIsError(false);
+        setIsLoading(false);
+        setIsLive(true);
+      } catch (err: any) {
+        if (!mountedRef.current) return;
+        const msg =
+          err?.name === "AbortError"
+            ? "Request timed out — check your internet connection"
+            : err?.message || "Failed to load feed";
+        setIsError(true);
+        setErrorMessage(msg);
+        setIsLoading(false);
+        setIsLive(false);
+      }
+    },
+    [mergeItems]
+  );
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    // Initial load
+    fetchFeed();
+
+    // Poll for new posts every 30s
+    pollTimerRef.current = setInterval(() => {
+      if (mountedRef.current) {
+        fetchFeed(latestTimestampRef.current ?? undefined);
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      mountedRef.current = false;
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, []);
+
+  const items =
+    category === "all"
+      ? allItems
+      : allItems.filter((i) => i.category === category);
+
+  return {
+    items,
+    isLoading,
+    isError,
+    errorMessage,
+    isLive,
+    newCount,
+    clearNewCount: () => setNewCount(0),
+    refetch: () => {
+      setIsLoading(true);
+      setIsError(false);
+      isFirstLoad.current = true;
+      fetchFeed();
+    },
+  };
+}

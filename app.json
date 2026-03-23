@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "FRMULA+",
+    "slug": "frmula-plus",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/frmula-icon.png",
+    "scheme": "frmulaplus",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/frmula-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "android": {
+      "package": "com.frmulaplus",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/frmula-icon-foreground.png",
+        "backgroundColor": "#000000",
+        "monochromeImage": "./assets/images/frmula-icon-monochrome.png"
+      },
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "SCHEDULE_EXACT_ALARM"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://frmulaplus.com"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/frmula-icon-monochrome.png",
+          "color": "#E10600"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "web": {
+      "favicon": "./assets/images/frmula-icon.png"
+    },
+    "extra": {
+      "router": {
+        "origin": "https://frmulaplus.com"
+      },
+      "eas": {
+        "projectId": "0866d401-d31c-4b90-a696-bc6a563e0667"
+      }
+    }
+  }
+}
