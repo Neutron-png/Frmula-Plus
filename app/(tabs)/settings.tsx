@@ -197,7 +197,7 @@ export default function SettingsTab() {
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Data Source</Text>
-              <Text style={styles.infoValue}>OpenF1 API</Text>
+              <Text style={styles.infoValue}>Trust Me Bro</Text>
             </View>
           </View>
         </View>
